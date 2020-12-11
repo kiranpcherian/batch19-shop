@@ -1,0 +1,17 @@
+[
+  {
+  "name": "iPhone 12 Pro max",
+  "description": "The most exciting phone",
+  "price": 1900.0
+},
+  {
+    "name": "iPhone 12 mini",
+    "description": "The most exciting phone",
+    "price": 1500.0
+  },
+  {
+    "name": "iPhone 12 Pro",
+    "description": "The most exciting phone",
+    "price": 1700.0
+  }
+]
