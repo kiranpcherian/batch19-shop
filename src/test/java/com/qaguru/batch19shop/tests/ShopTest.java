@@ -1,25 +1,13 @@
 package com.qaguru.batch19shop.tests;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qaguru.batch19shop.models.Product;
-import io.restassured.http.ContentType;
-import io.restassured.response.ValidatableResponse;
-import org.apache.http.HttpStatus;
-import org.hamcrest.Matcher;
-import org.testng.Assert;
+import com.qaguru.batch19shop.services.ProductService;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.net.URL;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 
 public class ShopTest {
-    private String baseUri = "http://localhost:8090";
-    private String basePath = "/api/v1/products";
-    private ObjectMapper objectMapper = new ObjectMapper();
+
+
     @Test
     public void sampleTest(){
         System.out.println("My test");
@@ -31,43 +19,39 @@ public class ShopTest {
     @Test
     public void saveANewProduct(){
         String file = "testdata/product.json";
-        URL url = getClass().getClassLoader().getResource(file);
-        Product product = null;
-        try {
-            product = objectMapper.readValue(url,Product.class);
+        ProductService productService = new ProductService();
+        Product product = productService.readProductDetails(file);
+        String productId = productService.saveANewProduct(product);
+        productService.findAProduct(productId,product);
 
-        } catch (IOException e) {
-            System.out.println("File read error");
-            e.printStackTrace();
-        }
+    }
+    @Test
+    public void updateProduct(){
+        String file = "testdata/product.json";
+        ProductService productService = new ProductService();
+        Product product = productService.readProductDetails(file);
+        String productId = productService.saveANewProduct(product);
+//        Product product2 =new Product();
+//        product2.setName("Samsung S20");
+//        product2.setDescription("A fully featured phone");
+//        product2.setPrice(1600.00);
 
+        Product product2 = Product.builder()
+                .name("Samsung 20")
+                .description("A featured phone")
+                .price(1700.99)
+                .build();
+        productService.updateAProduct(productId,product2);
+        productService.findAProduct(productId,product2);
 
-        ValidatableResponse response = given().baseUri(baseUri)
-                .basePath(basePath)
-                .contentType(ContentType.JSON)
-                .body(product)
-                .log().all()
-        .when()
-                .post("/")
-        .then()
-                .log().all()
-                .assertThat().statusCode(HttpStatus.SC_CREATED)
-                .assertThat().header("Location",containsString("/api/v1/products/"));
-        String location = response.extract().header("Location");
-        String id = location.substring(basePath.length()+1);
-        System.out.println("Product id - " +id);
+    }
+    @Test
+    public void deleteProduct(){
+        String file = "testdata/product.json";
+        ProductService productService = new ProductService();
+        Product product = productService.readProductDetails(file);
+        String productId = productService.saveANewProduct(product);
+        productService.deleteService(productId);
 
-        ValidatableResponse getResponse = given().baseUri(baseUri)
-                .basePath(basePath)
-                .log().all()
-                .when()
-                .get("/"+ id)
-                .then()
-                .log().all()
-                .assertThat().statusCode(HttpStatus.SC_OK);
-
-        Product resProduct = getResponse.extract().body().as(Product.class);
-        product.setId(resProduct.getId());
-        Assert.assertEquals(resProduct,product,"Incorrect product details");
     }
 }
