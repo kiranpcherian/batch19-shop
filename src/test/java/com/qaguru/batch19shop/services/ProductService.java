@@ -47,87 +47,95 @@ public class ProductService {
         return product;
     }
 
-    public String saveANewProduct(Product product) {
+    public String saveANewProduct(Product product,int expSc,String user, String password) {
         ValidatableResponse response = given()
                 .spec(specification)
                 .body(product)
+                .with().auth().basic(user, password)
                 .when()
                 .post("/")
                 .then()
                 .log().all()
-                .assertThat().statusCode(HttpStatus.SC_CREATED)
-                .assertThat().header("Location", containsString("/api/v1/products/"));
-        String location = response.extract().header("Location");
-        String id = location.substring(basePath.length() + 1);
-        System.out.println("Product id - " + id);
+                .assertThat().statusCode(expSc);
+
+        String id = null;
+        if (response.extract().statusCode() == HttpStatus.SC_CREATED) {
+            response.assertThat().header("Location", containsString("/api/v1/products/"));
+            String location = response.extract().header("Location");
+            id = location.substring(basePath.length() + 1);
+            System.out.println("Product id - " + id);
+
+        }
         return id;
     }
 
-    public void updateAProduct(String productId, Product product) {
-        ValidatableResponse response = given()
-                .spec(specification)
-                .body(product)
-                .when()
-                .put("/" + productId)
-                .then()
-                .log().all()
-                .assertThat().statusCode(HttpStatus.SC_NO_CONTENT);
-    }
-
-    public void findAProduct(String productId, Product product, int expSc) {
-        ValidatableResponse getResponse = given()
-                .spec(specification)
-                .when()
-                .get("/" + productId)
-                .then()
-                .log().all()
-                .assertThat().statusCode(expSc);
-
-        if (getResponse.extract().statusCode() == HttpStatus.SC_OK) {
-            Product resProduct = getResponse.extract().body().as(Product.class);
-            product.setId(resProduct.getId());
-            Assert.assertEquals(resProduct, product, "Incorrect product details");
+        public void updateAProduct (String productId, Product product){
+            ValidatableResponse response = given()
+                    .spec(specification)
+                    .body(product)
+                    .with().auth().basic("maria", "maria123")
+                    .when()
+                    .put("/" + productId)
+                    .then()
+                    .log().all()
+                    .assertThat().statusCode(HttpStatus.SC_NO_CONTENT);
         }
 
-    }
-    public void deleteService(String productId) {
-        given()
-                .spec(specification)
-                .when()
-                .delete("/" + productId)
-                .then()
-                .log().all()
-                .assertThat().statusCode(HttpStatus.SC_NO_CONTENT);
-    }
+        public void findAProduct (String productId, Product product,int expSc){
+            ValidatableResponse getResponse = given()
+                    .spec(specification)
+                    .when()
+                    .get("/" + productId)
+                    .then()
+                    .log().all()
+                    .assertThat().statusCode(expSc);
 
-    public List<Product> readProductList(String file) {
-        URL url = getClass().getClassLoader().getResource(file);
-        Product[] products = null;
-        try {
-            products = objectMapper.readValue(url, Product[].class);
+            if (getResponse.extract().statusCode() == HttpStatus.SC_OK) {
+                Product resProduct = getResponse.extract().body().as(Product.class);
+                product.setId(resProduct.getId());
+                Assert.assertEquals(resProduct, product, "Incorrect product details");
+            }
 
-        } catch (IOException e) {
-            System.out.println("File read error");
-            e.printStackTrace();
         }
-        return Arrays.asList(products);
-    }
+        public void deleteService (String productId){
+            given()
+                    .spec(specification)
+                    .with().auth().basic("maria", "maria123")
+                    .when()
+                    .delete("/" + productId)
+                    .then()
+                    .log().all()
+                    .assertThat().statusCode(HttpStatus.SC_NO_CONTENT);
+        }
 
-    public void findAllProducts(List<Product> expProducts) {
-        ValidatableResponse response = given()
-                .spec(specification)
-                .when()
-                .get("/")
-                .then()
-                .log().all()
-                .assertThat().statusCode(HttpStatus.SC_OK);
-        Product[] prodArray  = response.extract().as(Product[].class);
-        List<Product> actProducts = Arrays.asList(prodArray);
-        for (Product product: actProducts){
-            product.setId(null);
+        public List<Product> readProductList (String file){
+            URL url = getClass().getClassLoader().getResource(file);
+            Product[] products = null;
+            try {
+                products = objectMapper.readValue(url, Product[].class);
+
+            } catch (IOException e) {
+                System.out.println("File read error");
+                e.printStackTrace();
+            }
+            return Arrays.asList(products);
         }
-        for (Product product:expProducts){
-            Assert.assertTrue(actProducts.contains(product),"Product not found - " + product);
+
+        public void findAllProducts (List < Product > expProducts) {
+            ValidatableResponse response = given()
+                    .spec(specification)
+                    .when()
+                    .get("/")
+                    .then()
+                    .log().all()
+                    .assertThat().statusCode(HttpStatus.SC_OK);
+            Product[] prodArray = response.extract().as(Product[].class);
+            List<Product> actProducts = Arrays.asList(prodArray);
+            for (Product product : actProducts) {
+                product.setId(null);
+            }
+            for (Product product : expProducts) {
+                Assert.assertTrue(actProducts.contains(product), "Product not found - " + product);
+            }
         }
     }
-}
